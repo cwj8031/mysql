@@ -1,0 +1,105 @@
+1、下载mysql  5.7 源码包：
+http://mirrors.sohu.com/mysql/MySQL-5.7/
+和boost 1.59.0包：
+wget http://downloads.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.gz
+
+2、安装编译环境：
+yum -y install gcc gcc-c++ ncurses ncurses-devel cmake bison bison-devel
+
+3、创建安装目录：
+mkdir  /data  
+mkdir  /data/logs
+
+4、解压mysql5.7、boost到  /data下
+
+5、创建mysql用户和组
+groupadd -r  mysql
+useradd  -r  -g  mysql  mysql
+
+6、预编译：
+cmake 
+-DCMAKE_INSTALL_PREFIX=/data/mysql-5.7.16/   \
+-DMYSQL_DATADIR=/data/data/     \
+-DMYSQL_UNIX_ADDR=/data/mysql-5.7.16/mysql.sock    \
+-DWITH_BOOST=/data/boost_1_59_0     \
+-DSYSCONFDIR=/etc -DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1    \
+-DWITH_FEDERATED_STORAGE_ENGINE=1   \
+-DWITH_BLACKHOLE_STORAGE_ENGINE=1   \ 
+-DWITH_MYISAM_STORAGE_ENGINE=1   \
+-DENABLED_LOCAL_INFILE=1    \
+-DENABLE_DTRACE=0 -DDEFAULT_CHARSET=utf8mb4  \
+-DDEFAULT_COLLATION=utf8mb4_general_ci   \
+-DWITH_EMBEDDED_SERVER=1
+
+-DCMAKE_INSTALL_PREFIX=/usr/local/mysql    //设置安装目录
+-DMYSQL_DATADIR=/home/mysql/data     //设置数据库存放目录             
+-DMYSQL_UNIX_ADDR=/usr/local/mysql/mysql.sock   //设置UNIX socket目录
+-DDEFAULT_CHARSET=utf8mb4     //设置默认字符集
+-DDEFAULT_COLLATION=utf8mb4_general_ci     //设置默认校对规则
+-DWITH_INNOBASE_STORAGE_ENGINE=1    //添加InnoDB引擎支持
+-DSYSCONFDIR=/etc    //设置my.cnf配置文件的所在目录，默认为安装目录
+
+7、编译安装
+make
+make  install
+make  clean
+
+8、设置启动脚本：
+cp  support-files/mysql.server  /etc/init.d/mysqld
+chmod +x /etc/init.d/mysqld
+systemctl enable mysqld
+
+9、修改mysql的可执行目录：
+chow -R  mysql：mysql /data
+
+10、修改配置文件：
+cp support-files/my-default.cnf  /etc/my.cnf
+vi  /etc/my.cnf
+[mysqld]
+basedir = /data/mysql-5.7.16/
+datadir = /data/data/
+port = 3306
+socket = /data/mysql-5.7.16/mysql.sock
+log-error = /data/logs
+pid-file = /data/data/mysql.pid
+
+11、添加环境变量：
+vi  /etc/profile 
+export PATH=$PATH:/data/mysql-5.7.16/bin:/data/mysql-5.7.16/lib
+ .   /etc/profile
+
+12、初始化数据库
+mysqld  --initialize  --user=mysql  --basedir=/data/mysql-5.7.16/   --datadir=/data/data/
+
+13、我用上面的语句执行后，好像没起啥作用，然后把-datadir里面的数据全部删除，用以前的脚本执行了一次，然后成功
+mysql_install_db --user=mysql  --basedir=/data/mysql-5.7.16/   --datadir=/data/data/
+
+14、启动数据库
+systemctl  start  mysqld
+
+15、设置mysql安全机制：一路yes
+mysql_secure_installation
+
+16、进入 mysql  -u root  -p  修改密码
+SET PASSWORD=PASSWORD('Droi*#2017!!!');
+FLUSH PRIVILEGES;
+
+结束！！！
+
+https://my.oschina.net/u/1429136/blog/738772
+
+
+数据库授权：
+创建数据库：
+mysql> create database mantis;
+创建用户：
+create user mantis@'10.10.80.248' identified by 'Droi*#2017!!!';
+授权：
+grant all  privileges ON  mantis.* TO  mantis@'10.10,80.248'  identified by  'Droi*#2017!!!';
+FLUSH PRIVILEGES;
+
+PHP编译安装：
+wget http://mirrors.sohu.com/php/php-7.0.7.tar.gz
+yum install -y gcc libxml2  libxml2-devel
+./configure --prefix=/usr/local/php7 --enable-fpm
